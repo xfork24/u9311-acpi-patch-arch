@@ -3,6 +3,7 @@
 # Include the patch functions from the lib directory.
 . ./lib/patch-fedora.sh
 . ./lib/patch-ubuntu.sh
+. ./lib/patch-arch.sh
 
 main() {
     # Validate the vender. 
@@ -22,6 +23,10 @@ main() {
     # Elese if it is Ubuntu.
     elif [ -f /etc/lsb-release ]; then
         patch-ubuntu
+    # Else if it is Arch Linux (or a derivative that builds the initramfs
+    # with mkinitcpio).
+    elif [ -f /etc/mkinitcpio.conf ] && command -v mkinitcpio > /dev/null 2>&1; then
+        patch-arch
     else
         echo "Unsupported Linux distribution. Exiting."
         return 1

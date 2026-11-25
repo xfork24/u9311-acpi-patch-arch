@@ -1,5 +1,5 @@
 # Fujitsu FMV Lifebook U9311 ACPI Patch for Linux
-Applying ACPI Patch for Fujitsu FMV Lifebook U9311 for Ubuntu.
+Applying ACPI Patch for Fujitsu FMV Lifebook U9311 for Ubuntu and Arch Linux.
 
 The newest version of this software can be found at [GitHub](https://github.com/suikan4github/u9311-acpi-patch).
 
@@ -18,6 +18,7 @@ The scripts in this repository are based on the workaround described in the Arch
 
 ## Supported Distributions
 - Ubuntu Desktop
+- Arch Linux (and derivatives that build the initramfs with `mkinitcpio`)
 
 ### Tested Versions and Hardware
 As of 2026/Jun/18.
@@ -26,10 +27,13 @@ As of 2026/Jun/18.
 |-------------      | -------   |--------|
 | Ubuntu            | 25.10     |  OK    |
 | Ubuntu            | 26.04 LTS |  OK    |
+| Arch Linux        | rolling   |  OK    |
 
 Hardware : 
 - Fujitsu LIFEBOOK U9311FX Intel Core i5 1135G7.
   - BIOS: 2.54 (2025/06/06)
+- Fujitsu FMVU34013 (same platform).
+  - BIOS: 2.56 (2026/09/18)
 
 ## Usage
 Run the following command to apply the ACPI patch:
@@ -39,6 +43,32 @@ Run the following command to apply the ACPI patch:
 If the ACPI table has mismatch with the patch, script will terminate the process and exit with error. In this case, system will be untouched. 
 
 Reboot the system after running the script to apply the patch.
+
+### Arch Linux
+The upstream script only knows about Ubuntu, so this repository carries an Arch
+specific implementation in `lib/patch-arch.sh`. It follows
+[DSDT#Using modified code](https://wiki.archlinux.org/title/DSDT#Using_modified_code):
+the patched table is installed into `/etc/initcpio/acpi_override/` and the
+`acpi_override` hook of `mkinitcpio` embeds it into the early uncompressed
+initramfs, so no bootloader configuration has to be touched.
+
+```sh
+sudo ./u9311-acpi-patch.sh
+```
+
+The script installs `acpica` and `patch` if they are missing, so the first run
+needs network access. If the shipped diff does not apply cleanly (for example
+after a firmware update changed the surrounding code), the script falls back to
+removing the `VDDE` blocks directly from the disassembled source, and it always
+verifies afterwards that the compiled table carries a newer OEM revision.
+
+To undo the change on Arch Linux:
+
+```sh
+sudo rm /etc/initcpio/acpi_override/SSDT4.aml
+sudo sed -i -E '/^HOOKS=/ s/ acpi_override//' /etc/mkinitcpio.conf
+sudo mkinitcpio -P
+```
 
 ## Confirm the patch is applied
 After rebooting, run the following command to check the kernel log for the message indicating that the ACPI patch has been applied:
